@@ -55,6 +55,30 @@ class Stock30Min(Base):
     def __repr__(self):
         return f"<Stock30Min(ts_code='{self.ts_code}', trade_time='{self.trade_time}')>"
 
+
+class StockDaily(Base):
+    """日线行情数据表"""
+    __tablename__ = 'stock_daily'
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    ts_code = Column(String(10), index=True, comment='TS股票代码')
+    trade_date = Column(Date, index=True, comment='交易日期')
+    open = Column(DECIMAL(10, 2), comment='开盘价')
+    high = Column(DECIMAL(10, 2), comment='最高价')
+    low = Column(DECIMAL(10, 2), comment='最低价')
+    close = Column(DECIMAL(10, 2), comment='收盘价')
+    pre_close = Column(DECIMAL(10, 2), comment='昨收价')
+    change = Column(DECIMAL(10, 2), comment='涨跌额')
+    pct_chg = Column(DECIMAL(10, 2), comment='涨跌幅(%)')
+    vol = Column(DECIMAL(20, 2), comment='成交量(手)')
+    amount = Column(DECIMAL(20, 4), comment='成交额(千元)')
+
+    # 创建联合唯一索引，防止数据重复
+    __table_args__ = (UniqueConstraint('ts_code', 'trade_date', name='_ts_code_trade_date_uc'),)
+
+    def __repr__(self):
+        return f"<StockDaily(ts_code='{self.ts_code}', trade_date='{self.trade_date}')>"
+
+
 def init_db():
     """
     初始化数据库，创建所有定义的表。

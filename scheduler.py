@@ -2,7 +2,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 import logging
 
-from .data_sync import update_sync
+from .data_sync import update_sync, update_sync_daily
 
 # 配置日志记录
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -10,11 +10,19 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def daily_update_job():
     """
     定义每日增量更新的任务。
+    将按顺序更新30分钟线和日线数据。
     """
     logging.info("开始执行每日定时增量更新任务...")
     try:
+        logging.info("--- 开始更新30分钟K线数据 ---")
         update_sync()
-        logging.info("每日定时增量更新任务执行成功。")
+        logging.info("--- 30分钟K线数据更新完成 ---")
+
+        logging.info("--- 开始更新日线行情数据 ---")
+        update_sync_daily()
+        logging.info("--- 日线行情数据更新完成 ---")
+
+        logging.info("每日定时增量更新任务全部执行成功。")
     except Exception as e:
         logging.error(f"每日定时增量更新任务执行失败: {e}", exc_info=True)
 

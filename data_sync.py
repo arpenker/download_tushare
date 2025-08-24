@@ -123,6 +123,91 @@ def _sync_stock_data(ts_code: str, start_date: str, end_date: str = None):
     except Exception as e:
         print(f"同步 {ts_code} 数据时出错: {e}")
 
+
+# ------------------ Daily Data Sync Functions ------------------
+
+def full_sync_daily():
+    """
+    全量同步所有A股的日线行情数据。
+    """
+    print("开始全量同步日线行情数据，这是一个非常耗时的操作。")
+    update_stock_basic()
+    stocks_to_sync = get_stock_list()
+
+    with tqdm(total=len(stocks_to_sync), desc="日线全量同步进度") as pbar:
+        for stock in stocks_to_sync:
+            pbar.set_description(f"正在同步日线 {stock.ts_code}")
+            _sync_stock_daily_data(stock.ts_code, start_date=config.START_DATE or stock.list_date.strftime('%Y%m%d'))
+            pbar.update(1)
+    print("所有股票日线全量同步完成。")
+
+
+def update_sync_daily():
+    """
+    增量同步所有A股的日线行情数据。
+    """
+    print("开始增量同步日线行情数据...")
+    update_stock_basic()
+    stocks_to_sync = get_stock_list()
+
+    session = db.get_session()
+
+    print("正在查询所有股票的最新日线记录时间...")
+    latest_records_query = session.query(
+        db.StockDaily.ts_code,
+        func.max(db.StockDaily.trade_date)
+    ).group_by(db.StockDaily.ts_code).all()
+
+    latest_records_map = {ts_code: max_date for ts_code, max_date in latest_records_query}
+    print("查询完成。")
+
+    with tqdm(total=len(stocks_to_sync), desc="日线增量同步进度") as pbar:
+        for stock in stocks_to_sync:
+            pbar.set_description(f"增量同步日线 {stock.ts_code}")
+
+            latest_record = latest_records_map.get(stock.ts_code)
+
+            if latest_record:
+                # 从最新记录的后一天开始同步
+                start_date = (latest_record + timedelta(days=1)).strftime('%Y%m%d')
+            else:
+                # 如果没有记录，则从上市日期开始全量同步
+                start_date = config.START_DATE or stock.list_date.strftime('%Y%m%d')
+
+            _sync_stock_daily_data(stock.ts_code, start_date=start_date)
+            pbar.update(1)
+
+    session.close()
+    print("所有股票日线增量同步完成。")
+
+
+def _sync_stock_daily_data(ts_code: str, start_date: str, end_date: str = None):
+    """
+    使用daily接口获取并存储单个股票的日线行情数据。
+    """
+    try:
+        # Tushare建议使用pro.daily接口获取日线数据
+        df = pro.daily(ts_code=ts_code, start_date=start_date, end_date=end_date)
+        if df is None or df.empty:
+            return
+
+        # 数据清洗和格式化
+        df['trade_date'] = pd.to_datetime(df['trade_date'])
+
+        # 选择我们数据库中定义的列
+        columns_to_keep = [
+            'ts_code', 'trade_date', 'open', 'high', 'low', 'close',
+            'pre_close', 'change', 'pct_chg', 'vol', 'amount'
+        ]
+        df = df[columns_to_keep]
+
+        # 批量插入数据库
+        db.bulk_insert_data(df, db.StockDaily)
+
+    except Exception as e:
+        print(f"同步日线 {ts_code} 数据时出错: {e}")
+
+
 def fix_missing_data():
     """
     检查并修复缺失的交易日数据。

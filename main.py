@@ -10,27 +10,33 @@ def main():
     """
     # 创建一个顶层解析器
     parser = argparse.ArgumentParser(
-        description="Tushare A股30分钟K线数据同步工具。",
-        epilog="使用 'python -m download_tushare <command> --help' 来查看具体命令的帮助信息。"
+        description="Tushare A股日线及30分钟K线数据同步工具。",
+        epilog="使用 'python main.py <command> --help' 来查看具体命令的帮助信息。"
     )
 
     # 创建一个子命令解析器
     subparsers = parser.add_subparsers(dest='command', help='可用的命令')
     subparsers.required = True
 
-    # 1. `initdb` 命令
-    parser_initdb = subparsers.add_parser('initdb', help='初始化数据库，创建数据表。')
+    # --- 通用命令 ---
+    parser_initdb = subparsers.add_parser('initdb', help='初始化数据库，创建所有数据表。')
     parser_initdb.set_defaults(func=database.init_db)
 
-    # 2. `full` 命令
-    parser_full = subparsers.add_parser('full', help='全量同步所有股票的30分钟K线历史数据。')
-    parser_full.set_defaults(func=data_sync.full_sync)
+    # --- 30分钟线命令 ---
+    parser_full_30min = subparsers.add_parser('full', help='全量同步所有股票的30分钟K线历史数据。')
+    parser_full_30min.set_defaults(func=data_sync.full_sync)
 
-    # 3. `update` 命令
-    parser_update = subparsers.add_parser('update', help='增量同步所有股票的最新30分钟K线数据。')
-    parser_update.set_defaults(func=data_sync.update_sync)
+    parser_update_30min = subparsers.add_parser('update', help='增量同步所有股票的最新30分钟K线数据。')
+    parser_update_30min.set_defaults(func=data_sync.update_sync)
+
+    # --- 日线命令 ---
+    parser_full_daily = subparsers.add_parser('full_daily', help='全量同步所有股票的日线历史数据。')
+    parser_full_daily.set_defaults(func=data_sync.full_sync_daily)
+
+    parser_update_daily = subparsers.add_parser('update_daily', help='增量同步所有股票的最新日线数据。')
+    parser_update_daily.set_defaults(func=data_sync.update_sync_daily)
     
-    # 4. `fix` 命令 (占位)
+    # --- 其他命令 ---
     parser_fix = subparsers.add_parser('fix', help='检查并修复缺失的K线数据（功能待实现）。')
     parser_fix.set_defaults(func=data_sync.fix_missing_data)
 
