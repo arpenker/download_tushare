@@ -1,6 +1,3 @@
-# download_tushare
-
-
 # A股30分钟K线数据同步工具
 
 本项目是一个使用Python编写的工具，用于从Tushare Pro获取所有A股的30分钟K线数据，并将其存储到本地的MySQL数据库中。
@@ -30,12 +27,12 @@
 进入项目根目录，通过 `requirements.txt` 文件安装所有必需的Python库。
 
 ```bash
-pip install -r stock_data_sync/requirements.txt
+pip install -r requirements.txt
 ```
 
 **3. 配置 Tushare Token 和数据库**
 
-打开 `stock_data_sync/config.py` 文件，填入你的个人信息：
+打开 `download_tushare/config.py` 文件，填入你的个人信息：
 
 - `TUSHARE_TOKEN`: 你的Tushare Pro API Token。你可以在 [Tushare Pro官网](https://tushare.pro/user/token) 免费注册并获取。
 - `DB_CONFIG`: 你的MySQL数据库连接信息，包括主机、端口、用户名、密码和数据库名。
@@ -52,14 +49,14 @@ CREATE DATABASE stock_data CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 ## 使用说明
 
-本工具可以通过 `python -m stock_data_sync` 命令来运行，后跟不同的子命令。
+本工具可以通过 `python -m download_tushare` 命令来运行，后跟不同的子命令。
 
 **1. 初始化数据库表**
 
 在第一次运行时，你需要初始化数据库，创建所需的数据表。
 
 ```bash
-python -m stock_data_sync initdb
+python -m download_tushare initdb
 ```
 该命令会根据 `database.py` 中的定义，自动创建 `stock_basic` 和 `stock_30min` 两张表。
 
@@ -70,7 +67,7 @@ python -m stock_data_sync initdb
 **警告**: 此过程会遍历所有A股，下载它们自上市以来的全部30分钟K线数据，将消耗大量时间和网络流量，并对Tushare积分有一定要求。
 
 ```bash
-python -m stock_data_sync full
+python -m download_tushare full
 ```
 
 **3. 增量更新数据**
@@ -80,7 +77,7 @@ python -m stock_data_sync full
 建议每日收盘后执行此命令。
 
 ```bash
-python -m stock_data_sync update
+python -m download_tushare update
 ```
 
 ## 运行定时任务
@@ -88,13 +85,13 @@ python -m stock_data_sync update
 为了实现自动化更新，你可以直接运行 `scheduler.py` 脚本。它会启动一个常驻进程，在每个交易日（周一至周五）的下午16:00自动执行增量更新任务。
 
 ```bash
-python -m stock_data_sync.scheduler
+python -m download_tushare.scheduler
 ```
 
 你可以使用 `nohup` (Linux/macOS) 或其他工具让它在后台持续运行。
 
 ```bash
-nohup python -m stock_data_sync.scheduler > scheduler.log 2>&1 &
+nohup python -m download_tushare.scheduler > scheduler.log 2>&1 &
 ```
 
 按 `Ctrl+C` 可以停止调度器。
