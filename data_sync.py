@@ -69,16 +69,27 @@ def update_sync():
     
     session = db.get_session()
     
+    # --- 性能优化：一次性查询所有股票的最新时间 ---
+    print("正在查询所有股票的最新记录时间...")
+    latest_records_query = session.query(
+        db.Stock30Min.ts_code,
+        func.max(db.Stock30Min.trade_time)
+    ).group_by(db.Stock30Min.ts_code).all()
+
+    # 将查询结果转为字典以便快速查找: {'ts_code': latest_time}
+    latest_records_map = {ts_code: max_time for ts_code, max_time in latest_records_query}
+    print("查询完成。")
+    # -------------------------------------------
+
     with tqdm(total=len(stocks_to_sync), desc="增量同步进度") as pbar:
         for stock in stocks_to_sync:
             pbar.set_description(f"增量同步 {stock.ts_code}")
             
-            # 查找该股票的最新一条记录时间
-            latest_record = session.query(func.max(db.Stock30Min.trade_time)).filter(db.Stock30Min.ts_code == stock.ts_code).scalar()
+            latest_record = latest_records_map.get(stock.ts_code)
             
             if latest_record:
-                # 从最新记录的后一天开始同步
-                start_date = (latest_record + timedelta(days=1)).strftime('%Y%m%d')
+                # 从最新记录的当天开始同步，以获取当天可能未同步完的后续K线
+                start_date = latest_record.strftime('%Y%m%d')
             else:
                 # 如果没有记录，则从上市日期开始全量同步
                 start_date = config.START_DATE or stock.list_date.strftime('%Y%m%d')
@@ -92,8 +103,7 @@ def update_sync():
 
 def _sync_stock_data(ts_code: str, start_date: str, end_date: str = None):
     """
-    获取并存储单个股票在指定时间范围内的30分钟K线数据。
-    Tushare的get_k_data接口已不推荐，这里使用pro_bar接口。
+    使用pro_bar接口获取并存储单个股票在指定时间范围内的30分钟K线数据。
     """
     try:
         df = ts.pro_bar(ts_code=ts_code, freq='30min', start_date=start_date, end_date=end_date)

@@ -19,6 +19,3 @@ DB_CONFIG = {
 # 如果设置为None，将从股票的上市日期开始获取
 START_DATE = "2010-01-01"
 
-# 每次API请求的K线数量
-# Tushare pro接口单次提取最多5000条
-BARS_PER_REQUEST = 5000
