@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # MySQL数据库服务
+  db:
+    image: mysql:8.0
+    container_name: mysql_db_stock
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD} # 从.env文件读取root密码
+      MYSQL_DATABASE: stock_data                  # 定义默认创建的数据库名
+    ports:
+      # 将容器的3306端口映射到主机的3307端口，避免与主机上可能存在的MySQL冲突
+      - "3307:3306"
+    volumes:
+      # 将数据库文件持久化到docker卷，防止容器删除后数据丢失
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Python应用服务
+  app:
+    build: .
+    container_name: stock_sync_app
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy # 等待db服务健康后再启动
+    environment:
+      # 将配置作为环境变量注入到容器中
+      - TUSHARE_TOKEN=${TUSHARE_TOKEN} # 从.env文件读取Tushare Token
+      - DB_HOST=db                      # host设置为数据库服务名
+      - DB_PORT=3306                    # 容器内部端口
+      - DB_USER=root
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - DB_DATABASE=stock_data
+
+volumes:
+  # 定义一个docker卷来持久化数据库数据
+  mysql_data:

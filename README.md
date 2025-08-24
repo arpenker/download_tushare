@@ -10,88 +10,115 @@
 - **数据表自动创建**: 首次运行时可自动创建所需的数据库和数据表。
 - **定时任务**: 内置一个基于APScheduler的定时任务，可在每个交易日收盘后自动执行增量更新。
 - **灵活的命令行接口**: 支持通过命令行参数执行不同的任务。
+- **Docker一键部署**: 提供`docker-compose`配置，实现自动化部署和静默运行。
 
-## 环境要求
+---
+
+## Docker一键部署（推荐）
+
+使用Docker是推荐的部署方式，它可以让您完全不用操心环境配置和程序运行。
+
+**前提条件:**
+- 已安装 [Docker](https://www.docker.com/get-started/)
+- 已安装 [Docker Compose](https://docs.docker.com/compose/install/) (通常随Docker Desktop for Windows/Mac一起安装)
+
+**部署步骤:**
+
+**1. 配置**
+
+将项目根目录下的 `.env.example` 文件复制一份并重命名为 `.env`。然后打开 `.env` 文件，填入您的个人信息：
+
+```
+# .env
+TUSHARE_TOKEN=YOUR_TUSHARE_TOKEN_HERE
+MYSQL_ROOT_PASSWORD=your_strong_password
+```
+- `TUSHARE_TOKEN`: 您的Tushare Pro API Token。
+- `MYSQL_ROOT_PASSWORD`: 为您的数据库设置一个安全的密码。
+
+**2. 启动服务**
+
+在项目根目录下，打开命令行工具（如 PowerShell 或 CMD），运行以下命令：
+```bash
+docker-compose up -d
+```
+该命令会做以下事情：
+- 在后台构建并启动Python应用容器和MySQL数据库容器。
+- 数据库会自动创建，数据会持久化存储在Docker卷中。
+- Python应用会自动开始执行定时任务，在每个交易日下午16:00进行增量同步。
+
+**3. 执行首次全量同步**
+
+服务启动后，您需要手动执行一次全量同步，来获取全部的历史数据。
+打开一个新的命令行窗口，运行以下命令：
+```bash
+docker-compose exec app python main.py full
+```
+这个过程会非常耗时，请耐心等待。完成后，未来的数据将由定时任务自动增量同步。
+
+**4. 日常使用**
+
+- **查看日志**: 如果想观察程序的运行状态，可以查看应用日志。
+  ```bash
+  docker-compose logs -f app
+  ```
+- **连接数据库**: 您可以使用任何MySQL客户端（如Navicat, DataGrip, DBeaver）连接到数据库来查看和分析数据。
+  - **主机**: `127.0.0.1`
+  - **端口**: `3307` (注意，已映射到3307以避免与本地MySQL冲突)
+  - **用户**: `root`
+  - **密码**: 您在 `.env` 文件中设置的 `MYSQL_ROOT_PASSWORD`
+  - **数据库**: `stock_data`
+
+- **停止服务**: 如果您想停止所有服务，可以运行：
+  ```bash
+  docker-compose down
+  ```
+
+---
+
+## 手动安装与使用（旧版）
+
+如果您不想使用Docker，也可以按照传统方式手动部署。
+
+### 环境要求
 
 - Python 3.7+
 - MySQL 5.7+ 或 MariaDB
 
-## 安装与配置
+### 安装与配置
 
 **1. 获取代码**
-
 克隆或下载本项目到你的本地机器。
 
 **2. 安装依赖**
-
-进入项目根目录，通过 `requirements.txt` 文件安装所有必需的Python库。
-
 ```bash
 pip install -r requirements.txt
 ```
 
-**3. 配置 Tushare Token 和数据库**
+**3. 配置**
+打开 `config.py` 文件，手动填入您的 `TUSHARE_TOKEN` 和数据库连接信息。
 
-打开 `download_tushare/config.py` 文件，填入你的个人信息：
+**4. 数据库**
+在您的MySQL服务器中，手动创建名为 `stock_data` 的数据库。
 
-- `TUSHARE_TOKEN`: 你的Tushare Pro API Token。你可以在 [Tushare Pro官网](https://tushare.pro/user/token) 免费注册并获取。
-- `DB_CONFIG`: 你的MySQL数据库连接信息，包括主机、端口、用户名、密码和数据库名。
-
-**4. 创建数据库**
-
-在你的MySQL服务器中，手动创建一个数据库。数据库的名称应与你在 `config.py` 中 `DB_CONFIG['database']` 字段设置的名称一致。
-
-例如，如果你设置的数据库名是 `stock_data`，则执行以下SQL命令：
-
-```sql
-CREATE DATABASE stock_data CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-## 使用说明
-
-本工具可以通过 `python -m download_tushare` 命令来运行，后跟不同的子命令。
+### 使用说明
 
 **1. 初始化数据库表**
-
-在第一次运行时，你需要初始化数据库，创建所需的数据表。
-
 ```bash
-python -m download_tushare initdb
+python main.py initdb
 ```
-该命令会根据 `database.py` 中的定义，自动创建 `stock_basic` 和 `stock_30min` 两张表。
 
 **2. 全量同步历史数据**
-
-如果你是第一次使用，或者想要完整地获取所有历史数据，可以执行全量同步。
-
-**警告**: 此过程会遍历所有A股，下载它们自上市以来的全部30分钟K线数据，将消耗大量时间和网络流量，并对Tushare积分有一定要求。
-
 ```bash
-python -m download_tushare full
+python main.py full
 ```
 
 **3. 增量更新数据**
-
-用于获取最新的数据。它会自动查找每只股票在数据库中的最新记录，并从该时间点之后开始同步。如果某只股票是新加入的，则会自动进行全量同步。
-
-建议每日收盘后执行此命令。
-
 ```bash
-python -m download_tushare update
+python main.py update
 ```
 
-## 运行定时任务
-
-为了实现自动化更新，你可以直接运行 `scheduler.py` 脚本。它会启动一个常驻进程，在每个交易日（周一至周五）的下午16:00自动执行增量更新任务。
-
+**4. 运行定时任务**
 ```bash
-python -m download_tushare.scheduler
+python scheduler.py
 ```
-
-你可以使用 `nohup` (Linux/macOS) 或其他工具让它在后台持续运行。
-
-```bash
-nohup python -m download_tushare.scheduler > scheduler.log 2>&1 &
-```
-
-按 `Ctrl+C` 可以停止调度器。
