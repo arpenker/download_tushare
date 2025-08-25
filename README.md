@@ -17,10 +17,9 @@
 **1. 下载项目**
 打开您的命令行工具（如 PowerShell 或 CMD），进入您想存放项目的文件夹，然后运行以下命令从GitHub克隆项目：
 ```bash
-git clone <项目在GitHub上的URL> A-stock-data-sync
+git clone https://github.com/arpenker/download_tushare.git A-stock-data-sync
 cd A-stock-data-sync
 ```
-*(注意: 请将 `<项目在GitHub上的URL>` 替换为实际的项目地址)*
 
 **2. 配置并启动服务**
 首先，将配置文件模板复制一份：
