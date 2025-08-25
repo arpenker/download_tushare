@@ -2,6 +2,41 @@
 
 本项目是一个使用Python编写的工具，用于从Tushare Pro获取所有A股的日线及30分钟K线数据，并将其存储到本地的MySQL数据库中。
 
+---
+
+## 一键安装与启动
+
+本项目专为Docker设计，可以极简地在您的Win10环境下运行。从零开始到服务启动，总共只需要**两条命令**。
+
+**前提条件:**
+- 已安装 [Git](https://git-scm.com/downloads)
+- 已安装 [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
+
+**步骤:**
+
+**1. 下载项目**
+打开您的命令行工具（如 PowerShell 或 CMD），进入您想存放项目的文件夹，然后运行以下命令从GitHub克隆项目：
+```bash
+git clone <项目在GitHub上的URL> A-stock-data-sync
+cd A-stock-data-sync
+```
+*(注意: 请将 `<项目在GitHub上的URL>` 替换为实际的项目地址)*
+
+**2. 配置并启动服务**
+首先，将配置文件模板复制一份：
+```bash
+copy .env.example .env
+```
+然后，用记事本或其他编辑器打开 `.env` 文件，填入您的 `TUSHARE_TOKEN` 和一个自定义的数据库密码。
+
+最后，运行以下命令来一键启动所有服务：
+```bash
+docker-compose up -d
+```
+服务启动后，您可以继续执行首次全量同步。详细说明请参考下面的“Docker一键部署”章节。
+
+---
+
 ## 主要功能
 
 - **多周期数据下载**: 一次性获取所有股票的历史日线和30分钟K线数据。
@@ -17,15 +52,9 @@
 
 ---
 
-## Docker一键部署（推荐）
+## Docker一键部署（详细说明）
 
-使用Docker是推荐的部署方式，它可以让您完全不用操心环境配置和程序运行。
-
-**前提条件:**
-- 已安装 [Docker](https://www.docker.com/get-started/)
-- 已安装 [Docker Compose](https://docs.docker.com/compose/install/) (通常随Docker Desktop for Windows/Mac一起安装)
-
-**部署步骤:**
+本章节提供部署和使用的详细信息。
 
 **1. 配置**
 
