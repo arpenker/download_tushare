@@ -44,6 +44,25 @@ def get_stock_list():
     session.close()
     return stocks
 
+
+def full_sync_all():
+    """
+    执行一个完整的、统一的全量同步。
+    按顺序先同步日线，再同步30分钟线。
+    """
+    print("====== 开始统一全量同步任务 ======")
+
+    # 1. 同步日线数据
+    print("\n--- 步骤 1/2: 全量同步日线数据 ---")
+    full_sync_daily()
+
+    # 2. 同步30分钟线数据
+    print("\n--- 步骤 2/2: 全量同步30分钟K线数据 ---")
+    full_sync()
+
+    print("\n====== 统一全量同步任务全部完成 ======")
+
+
 def full_sync():
     """
     全量同步所有A股的30分钟K线数据。

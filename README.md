@@ -52,19 +52,13 @@ docker-compose up -d
 
 **3. 执行首次全量同步**
 
-服务启动后，您需要手动执行**两次**全量同步，分别获取30分钟和日线的全部历史数据。
-打开一个新的命令行窗口，依次运行以下命令：
+服务启动后，您需要手动执行一次统一的全量同步，来获取全部的历史数据（**该过程将先同步日线，后同步30分钟线**）。
+打开一个新的命令行窗口，运行以下命令：
 
-**同步30分钟K线历史数据 (非常耗时):**
 ```bash
-docker-compose exec app python main.py full
+docker-compose exec app python main.py full_all
 ```
-
-**同步日线历史数据 (非常耗时):**
-```bash
-docker-compose exec app python main.py full_daily
-```
-完成后，未来的数据将由定时任务自动增量同步。
+这个过程会非常耗时，请耐心等待。完成后，未来的数据将由定时任务自动增量同步。
 
 **4. 日常使用**
 
@@ -108,16 +102,17 @@ python main.py initdb
 
 **2. 全量同步历史数据**
 ```bash
-# 同步30分钟线
-python main.py full
+# 【推荐】一键同步所有数据
+python main.py full_all
 
-# 同步日线
-python main.py full_daily
+# 或者，分步同步
+# python main.py full_daily
+# python main.py full
 ```
 
 **3. 增量更新数据**
 ```bash
-# 增量更新30分钟线
+# 增量更新30分钟线 (日线数据会自动在定时任务中更新)
 python main.py update
 
 # 增量更新日线
