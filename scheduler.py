@@ -2,7 +2,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 import logging
 
-from .data_sync import update_sync, update_sync_daily
+from .data_sync import update_sync, update_sync_daily, fix_missing_data
 
 # 配置日志记录
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -54,8 +54,19 @@ def main():
         replace_existing=True
     )
 
+    # 添加每周数据完整性检查任务
+    # 触发器设置为：每周日的凌晨2点执行
+    scheduler.add_job(
+        fix_missing_data,
+        trigger=CronTrigger(day_of_week='sun', hour=2, minute=0),
+        id='weekly_data_fix',
+        name='每周数据完整性检查与修复',
+        replace_existing=True
+    )
+
     logging.info("调度器已启动。等待下一个执行时间点...")
     print("定时任务已设置。将在每个交易日下午16:00自动执行增量数据同步。")
+    print("每周日凌晨02:00将执行一次数据完整性检查。")
     print("按 Ctrl+C 可以退出程序。")
 
     try:
